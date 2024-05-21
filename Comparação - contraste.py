@@ -1,0 +1,467 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri May 17 14:26:47 2024
+
+@author: usuario
+"""
+
+# Bibliotecas:
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+import sympy as sp
+
+
+# constantes
+H0 = 67.4
+O_m0 = 0.315
+O_L0 = 0.7
+w0 = -0.957
+wa = -0.29
+O_k0 = 0.0007
+
+
+# Modelo LCDM:
+def Densidade(t, y):    # t é o fator de escala e y é o delta (contraste)
+    D_RG  = y[0]     # contraste
+    dD_RG = y[1]    # primeira derivada do contraste
+
+    O_m = O_m0*t**(-3)  
+    O_L = 1 - O_m0
+
+    H_RG = H0*np.sqrt(O_m + O_L)    # H(z)
+    dH_RG = - (H_RG/t) - 0.5*(H0/t)*(H0/H_RG)*(O_m - 2*O_L)        # derivada do H(z)
+
+# funções definidas somente para facilitar a escrita da derivada segunda do contraste
+    faux1 = 3*H0**2
+    faux2 = 2*(t**2)*(H_RG**2)
+
+    ddD_RG = - ((3/t) + (dH_RG/H_RG))*dD_RG + (faux1/faux2)*O_m*D_RG   #  eq. da derivada segunda do contraste
+    return [dD_RG, ddD_RG]
+
+
+# Espaço de integração:
+t_span = [0.17, 1]   # intervalo de integração do fator de escala
+t = np.linspace(0.17, 1, 1000)
+
+# Condições iniciais:
+y0 = [0.2, 1] 
+
+
+# Solução:
+sol = solve_ivp(Densidade, t_span, y0, t_eval=t, method='LSODA') # função que quero resolver, o intervalo de integração, as condições iniciais, o linspace e o método
+D_RG = sol.y[0]
+dD_RG = sol.y[1]
+
+
+# definindo o redshift
+z = 1/sol.t - 1
+
+
+
+# plotando o contraste x z
+plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
+plt.legend()
+plt.xlabel('z')
+plt.ylabel('$\delta$')
+#plt.savefig('delta(z).png', dpi=520, format='png', bbox_inches='tight')
+plt.show()
+
+
+
+
+######################################################################################
+
+
+
+# Modelo w0waCDM:
+def Densidade_w(t, y):    # t é o fator de escala e y é o delta (contraste)
+    D_RG_w  = y[0]     # contraste
+    dD_RG_w = y[1]    # primeira derivada do contraste
+
+    O_m = O_m0*t**(-3)  
+    O_L = O_L0*(t**(-3*(w0 + wa*(1-t)) ) )
+
+    H_RG_w = H0*np.sqrt(O_m + O_L)    # H(z)
+    dH_RG_w = - (H_RG_w/t) - 0.5*(H0/t)*(H0/H_RG_w)*(O_m - 2*O_L)        # derivada do H(z)
+
+# funções definidas somente para facilitar a escrita da derivada segunda do contraste
+    faux1 = 3*H0**2
+    faux2 = 2*(t**2)*(H_RG_w**2)
+
+    ddD_RG_w = - ((3/t) + (dH_RG_w/H_RG_w))*dD_RG_w + (faux1/faux2)*O_m*D_RG_w   #  eq. da derivada segunda do contraste
+    return [dD_RG_w, ddD_RG_w]
+
+
+# Espaço de integração:
+t_span = [0.17, 1]   # intervalo de integração do fator de escala
+t = np.linspace(0.17, 1, 1000)
+
+# Condições iniciais:
+y0 = [0.2, 1] 
+
+
+# Solução:
+sol_w = solve_ivp(Densidade_w, t_span, y0, t_eval=t, method='LSODA') # função que quero resolver, o intervalo de integração, as condições iniciais, o linspace e o método
+D_RG_w = sol_w.y[0]
+dD_RG_w = sol_w.y[1]
+
+
+# definindo o redshift
+z = 1/sol_w.t - 1
+
+
+
+################################################################################
+
+# Modelo AB-f(R):
+    
+# Condições iniciais
+ti = 0.2
+O_r0 = 0
+mu = 10**(-7)
+k = 0.125
+    
+    
+def Den_AB(t, y, H0, O_m0, b):
+    H_AB   = y[0]
+    dH_AB  = y[1]
+    ddH_AB = y[2]
+    D_AB   = y[3]
+    dD_AB  = y[4]
+
+    O_m = O_m0*t**(-3)
+    O_r = O_r0*t**(-4)
+
+    R_vac = 12*H0**2
+    e_AB = R_vac/np.log(1 + np.exp(2*b))
+    M2 = e_AB/mu
+
+    R_AB = 6*H_AB*(2*H_AB + t*dH_AB)
+    alpha = (R_AB/e_AB) - b
+
+    if abs(alpha) < 25:
+      s = 1/np.cosh(alpha)
+    else:
+      s = 0
+
+    A = (H0**2)*(3*O_m + 4*O_r)
+    B = (2*t*H_AB*dH_AB*R_AB)/(3*M2)
+    C = t*H_AB*dH_AB*(np.tanh(alpha) + 1)
+
+    c1 = 6*(t**2)*(H_AB**2)/e_AB
+    c2 = ddH_AB + ((dH_AB**2)/H_AB) + (5*dH_AB/t)
+
+    if abs(alpha) < 15:
+      D = ((c1*c2*s)**2)*np.tanh(alpha)
+    else:
+      D = 0
+
+    if abs(alpha) < 15:
+      E = 6*(t**3)*(H_AB**3)*((1/(3*M2)) + (0.5*s*s/e_AB))
+    else:
+      E = 6*(t**3)*(H_AB**3)*(1/(3*M2))
+    F = (11*dH_AB**2/(t*H_AB)) + (dH_AB**3/(H_AB**2)) + (6*ddH_AB/t) + (4*dH_AB*ddH_AB/H_AB)
+    dddH_AB = - ((A + B + C - D)/E) - F
+
+    fR = 0.5*(1 + np.tanh(alpha)) + R_AB/(3*M2)
+    fRR= (0.5/e_AB)*s**2 + 1/(3*M2)
+
+    R_0 = R_vac
+    alpha_0 = (R_0/e_AB) - b
+
+    fR_0 = 0.5*(1 + np.tanh(alpha_0)) + (R_0/(3*M2))
+    fRR_0 = (0.5/e_AB)*((1/np.cosh(alpha_0))**2) + (1/3*M2)
+
+    gaux3 = 9e6*(k*k/(t*t))*(fRR/fR)*(fR_0/fRR_0)
+    #gaux3 = (fRR/fR)*(k/t)**2
+    Geffn = (1/fR)*(1 + 4*gaux3)/(1 + 3*gaux3)
+
+    fAB1 = 3*Geffn*H0**2
+    fAB2 = 2*t*t*H_AB*H_AB
+
+    ddD_AB = - ((3/t) + (dH_AB/H_AB))*dD_AB + (fAB1/fAB2)*O_m*D_AB
+    return [dH_AB, ddH_AB, dddH_AB, dD_AB, ddD_AB]
+
+def sol_DAB(H0, O_m0, b):
+    #Integração:
+    t_span = [ti, 1]
+    t = np.linspace(ti, 1, 1000)
+
+    # Condições iniciais:
+    O_mi = O_m0*ti**(-3)
+    O_ri = O_r0*ti**(-4)
+    O_L = 1 - O_m0
+    Hi = H0*np.sqrt(O_mi + O_ri + O_L)
+    dHi = - ((H0**2)/(2*ti*Hi))*(3*O_mi + 4*O_ri)
+    ddHi = 0.5*(H0/(ti*Hi))**2*(Hi + ti*dHi)*(3*O_mi + 4*O_ri) + 0.5*(H0/(ti*Hi))**2*Hi*(9*O_mi + 16*O_ri)
+    y0 = [Hi, dHi, ddHi, ti, 1]
+
+    # Solução:
+    sol = solve_ivp(Den_AB, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, b))
+    D_AB  = sol.y[3]
+    return D_AB
+
+#print(Sol_DAB(70, 0.3, 2))
+
+
+
+#####################################################################################
+
+
+# Modelo wCDM:
+def Densidade_w1(t, y):    # t é o fator de escala e y é o delta (contraste)
+    D_RG_w1  = y[0]     # contraste
+    dD_RG_w1 = y[1]    # primeira derivada do contraste
+
+    O_m = O_m0*t**(-3)  
+    O_L = O_L0*(t**(-3*(1+w0) ) )
+
+    H_RG_w1 = H0*np.sqrt(O_m + O_L)    # H(z)
+    dH_RG_w1 = - (H_RG_w1/t) - 0.5*(H0/t)*(H0/H_RG_w1)*(O_m - 2*O_L)        # derivada do H(z)
+
+# funções definidas somente para facilitar a escrita da derivada segunda do contraste
+    faux1 = 3*H0**2
+    faux2 = 2*(t**2)*(H_RG_w1**2)
+
+    ddD_RG_w1 = - ((3/t) + (dH_RG_w1/H_RG_w1))*dD_RG_w1 + (faux1/faux2)*O_m*D_RG_w1   #  eq. da derivada segunda do contraste
+    return [dD_RG_w1, ddD_RG_w1]
+
+
+# Espaço de integração:
+t_span = [0.17, 1]   # intervalo de integração do fator de escala
+t = np.linspace(0.17, 1, 1000)
+
+# Condições iniciais:
+y0 = [0.2, 1] 
+
+
+# Solução:
+sol_w1 = solve_ivp(Densidade_w1, t_span, y0, t_eval=t, method='LSODA') # função que quero resolver, o intervalo de integração, as condições iniciais, o linspace e o método
+D_RG_w1 = sol_w1.y[0]
+dD_RG_w1 = sol_w1.y[1]
+
+
+# definindo o redshift
+z = 1/sol_w1.t - 1
+
+
+
+#################################################################################
+
+# Modelo O_k-CDM:
+def Densidade_k(t, y):    # t é o fator de escala e y é o delta (contraste)
+    D_RG_k  = y[0]     # contraste
+    dD_RG_k = y[1]    # primeira derivada do contraste
+
+    O_m = O_m0*t**(-3)  
+    O_k = O_k0*t**(-2)
+    O_L = 1 - O_m0 - O_k0
+
+    H_RG_k = H0*np.sqrt(O_m + O_L + O_k)    # H(z)
+    dH_RG_k = - (H_RG_k/t) - 0.5*(H0/t)*(H0/H_RG_k)*(O_m - 2*O_L)       # derivada do H(z)
+
+# funções definidas somente para facilitar a escrita da derivada segunda do contraste
+    faux1 = 3*H0**2
+    faux2 = 2*(t**2)*(H_RG_k**2)
+
+    ddD_RG_k = - ((3/t) + (dH_RG_k/H_RG_k))*dD_RG_k + (faux1/faux2)*O_m*D_RG_k   #  eq. da derivada segunda do contraste
+    return [dD_RG_k, ddD_RG_k]
+
+
+# Espaço de integração:
+t_span = [0.17, 1]   # intervalo de integração do fator de escala
+t = np.linspace(0.17, 1, 1000)
+
+# Condições iniciais:
+y0 = [0.2, 1] 
+
+
+# Solução:
+sol_k = solve_ivp(Densidade_k, t_span, y0, t_eval=t, method='LSODA') # função que quero resolver, o intervalo de integração, as condições iniciais, o linspace e o método
+D_RG_k = sol.y[0]
+dD_RG_k = sol.y[1]
+
+
+# definindo o redshift
+z = 1/sol_k.t - 1
+
+
+######################################################################################
+
+p = 0.17 #0.049787068
+t = np.linspace(p, 1, 1000)
+z = (1/t) - 1
+
+
+# Modelo Starobinski
+def Den_S(t, y, H0, O_m0, lbd, n): # lbd é o parâmetro lambda
+    yH = y[0]
+    YH = y[1]        # YH = dyH/da
+    D_S = y[2]
+    dD_S = y[3]
+
+    O_m = O_m0*t**(-3)
+    O_r = O_r0*t**(-4)
+
+    chi = O_r0/O_m0
+    ms = (H0**2)*O_m0
+    O_L = 1 - O_m0
+
+    R = 3*ms*(4*yH + t*YH + t**(-3))
+
+    Rs = 6*(H0**2)*(1 - O_m0)/lbd
+    star = 1 + (R/Rs)**2
+
+    f = R + lbd*Rs*( (star**(-n)) - 1 )
+    fR = 1 - 2*n*lbd*(R/Rs)*((star)**(-(n+1)))
+    fRR = (2*n*lbd/Rs)*( 2*(n+1)*((R/Rs)**2)*(star**(-n-2)) - (star**(-n-1)) )
+
+    yaux1 = yH + t**(-3) + chi*t**(-4)
+    yaux2 = t**(-3) + 2*chi*t**(-4)
+
+    j1 = 4 + (1/yaux1)*(1-fR)/(6*ms*fRR)
+    j2 = (1/yaux1)*(2-fR)/(3*ms*fRR)
+    j3 = - 3*t**(-3) - (((1-fR)*yaux2 + (R-f)/(3*ms))/yaux1)*(1/(6*ms*fRR))
+    J1 = (1/t)*(1 + j1)
+    J2 = (1/t)*(j2/t)
+    J3 = (1/t)*(j3/t)
+
+    dYH = - J1*YH - J2*yH - J3
+
+    H_S = np.sqrt(ms*(yH + (1/t)**3 + chi*(1/t)**4))
+    dH_S = (R/(6*t*H_S)) - (2*H_S/t)
+
+    gaux3 = (fRR/fR)*(k*(H0/100)/t)**2
+    Geffn = (1/(fR))*(1 + 4*gaux3)/(1 + 3*gaux3)
+
+    fAB1 = 3*Geffn*H0**2
+    fAB2 = 2*t*t*H_S*H_S
+
+    ddD_S = - ((3/t) + (dH_S/H_S))*dD_S + (fAB1/fAB2)*O_m*D_S
+    return [YH, dYH, dD_S, ddD_S]
+
+def solD_S(H0, O_m0, lbd, n):
+    #Integração:
+    t_span = [p, 1]
+
+    # Condições iniciais:
+    y0 = [(1-O_m0)/O_m0, 0, p, 1]
+
+    # Solução:
+    sol = solve_ivp(Den_S, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, lbd, n))
+    D_S  = sol.y[2]
+    return D_S
+
+#print(solD_HS(70,0.3,1,1)[999])
+
+
+
+#####################################################################################
+
+# Modelo Hu-Sawicki
+def Den_HS(t, y, H0, O_m0, c2, n):
+    yH = y[0]
+    YH = y[1]        # YH = dyH/da
+    D_HS = y[2]
+    dD_HS = y[3]
+
+    O_m = O_m0*t**(-3)
+    O_r = O_r0*t**(-4)
+
+    chi = O_r0/O_m0
+    ms = (H0**2)*O_m0
+    O_L = 1 - O_m0
+
+    c1 = 6*c2*(O_L/O_m0)
+
+    R = 3*ms*(4*yH + t*YH + t**(-3))
+
+    xn1 = (R/ms)**n
+    xn2 = c1/(ms**n)
+    xn3 = (n+1)*(c2/ms)*R**(2*(n-1))
+    xn4 = (n-1)*R**(n-2)
+    xn5 = ((c2*xn1) + 1)
+
+    f = R - ms*((c1*xn1)/((c2*xn1)  + 1))
+    fR = 1 - n*xn2*ms*((R**(n-1))/(xn5**2))
+    fRR = n*xn2*ms*( (xn3 - xn4)/(xn5**3))
+
+    yaux1 = yH + t**(-3) + chi*t**(-4)
+    yaux2 = t**(-3) + 2*chi*t**(-4)
+
+    j1 = 4 + (1/yaux1)*(1-fR)/(6*ms*fRR)
+    j2 = (1/yaux1)*(2-fR)/(3*ms*fRR)
+    j3 = - 3*t**(-3) - (((1-fR)*yaux2 + (R-f)/(3*ms))/yaux1)*(1/(6*ms*fRR))
+    J1 = (1/t)*(1 + j1)
+    J2 = (1/t)*(j2/t)
+    J3 = (1/t)*(j3/t)
+
+    dYH = - J1*YH - J2*yH - J3
+
+    H_HS = np.sqrt(ms*(yH + (1/t)**3 + chi*(1/t)**4))
+    dH_HS = (R/(6*t*H_HS)) - (2*H_HS/t)
+
+    gaux3 = (fRR/fR)*(k*(H0/100)/t)**2
+    Geffn = (1/(fR))*(1 + 4*gaux3)/(1 + 3*gaux3)
+
+    fAB1 = 3*Geffn*H0**2
+    fAB2 = 2*t*t*H_HS*H_HS
+
+    ddD_HS = - ((3/t) + (dH_HS/H_HS))*dD_HS + (fAB1/fAB2)*O_m*D_HS
+    return [YH, dYH, dD_HS, ddD_HS]
+
+def solD_HS(H0, O_m0, c2, n):
+    #Integração:
+    t_span = [p, 1]
+
+    # Condições iniciais:
+    y0 = [(1-O_m0)/O_m0, 0, p, 1]
+
+    # Solução:
+    sol = solve_ivp(Den_HS, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, c2, n))
+    D_HS  = sol.y[2]
+    return D_HS
+
+#print(solD_HS(70,0.3,1,1)[999])
+
+
+# plotando o contraste x z
+plt.plot(z, D_RG_w, color='red', linewidth = 2, label='$\omega_0 \omega_a$CDM')
+plt.plot(z, solD_S(70,0.3,1,1), color='orange', linewidth = 2, label='Starobinski (n=1)')
+plt.plot(z, solD_S(70,0.3,1,2), color='darkgoldenrod', linewidth = 2, label='Starobinski (n=2)')
+plt.plot(z, solD_HS(70,0.3,1,1), color='purple', linewidth = 2, label='Hu-Sawicki (n=1)')
+plt.plot(z, solD_HS(70,0.3,1,2), color='magenta', linewidth = 2, label='Hu-Sawicki (n=2)')
+plt.plot(z, D_RG_w1, color='deeppink', linewidth = 2, label='$\omega$CDM')
+plt.plot(z, D_RG_k, color='green', linewidth = 2, label='$\Omega_k$-CDM')
+plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
+plt.plot(z, sol_DAB(70, 0.3, 1.6), color='black', linewidth = 2, label='$R^2$_AB model')
+plt.legend()
+plt.xlabel('z')
+plt.ylabel('$\delta(z)$')
+#plt.savefig('delta(z)_comparacao.png', dpi=520, format='png', bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
