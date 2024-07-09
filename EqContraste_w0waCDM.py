@@ -28,7 +28,7 @@ def Densidade(t, y):    # t é o fator de escala e y é o delta (contraste)
     dD_RG = y[1]    # primeira derivada do contraste
 
     O_m = O_m0*t**(-3)  
-    O_L = O_L0*(t**(-3*(w0 + wa*(1-t)) ) )
+    O_L = O_L0*(t**(-3*(1+ w0 + wa*(1-t)) ) )
 
     H_RG = H0*np.sqrt(O_m + O_L)    # H(z)
     dH_RG = - (H_RG/t) - 0.5*(H0/t)*(H0/H_RG)*(O_m - 2*O_L)        # derivada do H(z)
@@ -46,7 +46,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
@@ -74,8 +74,8 @@ plt.show()
 G = ((sol.t)*dD_RG)/D_RG - 1
 
 #plt.figure(figsize=(10, 8))
-plt.plot(z, G, color='deeppink', linewidth = 2, label='$\omega$CDM')
-plt.xlabel('z')
-plt.ylabel('G(a)')
-plt.legend()
-plt.show()
+#plt.plot(z, G, color='deeppink', linewidth = 2, label='$\omega$CDM')
+#plt.xlabel('z')
+#plt.ylabel('G(a)')
+#plt.legend()
+#plt.show()

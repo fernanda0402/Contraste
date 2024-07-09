@@ -26,7 +26,7 @@ def fgw0wa(t, y):
 
     O_m = O_m0*t**(-3)
     O_r = O_r0*t**(-4)
-    O_L = O_L0*(t**(-3*(w0 + wa*(1-t)) ) )
+    O_L = O_L0*(t**(-3*(1+w0 + wa*(1-t)) ) )
 
     H_RG_w = H0*np.sqrt(O_m + O_r + O_L)
     dH_RG_w = - (H_RG_w/t) - 0.5*(H0/t)*(H0/H_RG_w)*(O_m + 2*O_r - 2*O_L)

@@ -435,8 +435,50 @@ def solD_HS(H0, O_m0, c2, n):
 diff6 = (solD_HS(70,0.3,1,1) - D_RG) / D_RG
 
 
+##################################################################################
+
+# Modelo w0waCDM:
+def Densidade_w(t, y):    # t é o fator de escala e y é o delta (contraste)
+    D_RG_w  = y[0]     # contraste
+    dD_RG_w = y[1]    # primeira derivada do contraste
+
+    O_m = O_m0*t**(-3)  
+    O_L = O_L0*(t**(-3*(1 + w0 + wa*(1-t)) ) )
+
+    H_RG_w = H0*np.sqrt(O_m + O_L)    # H(z)
+    dH_RG_w = - (H_RG_w/t) - 0.5*(H0/t)*(H0/H_RG_w)*(O_m - 2*O_L)        # derivada do H(z)
+
+# funções definidas somente para facilitar a escrita da derivada segunda do contraste
+    faux1 = 3*H0**2
+    faux2 = 2*(t**2)*(H_RG_w**2)
+
+    ddD_RG_w = - ((3/t) + (dH_RG_w/H_RG_w))*dD_RG_w + (faux1/faux2)*O_m*D_RG_w   #  eq. da derivada segunda do contraste
+    return [dD_RG_w, ddD_RG_w]
+
+
+# Espaço de integração:
+t_span = [0.17, 1]   # intervalo de integração do fator de escala
+t = np.linspace(0.17, 1, 1000)
+
+# Condições iniciais:
+y0 = [0.17, 1] 
+
+
+# Solução:
+sol_w = solve_ivp(Densidade_w, t_span, y0, t_eval=t, method='LSODA') # função que quero resolver, o intervalo de integração, as condições iniciais, o linspace e o método
+D_RG_w = sol_w.y[0]
+dD_RG_w = sol_w.y[1]
+
+
+# definindo o redshift
+z = 1/sol_w.t - 1
+
+diff7 = (D_RG_w - D_RG) / D_RG
+
+
 plt.plot(z, diff1, color='blue', linewidth = 2, label='($R^2$AB - $\Lambda$CDM) / $\Lambda$CDM')
 plt.plot(z, diff2, color='deeppink', linewidth = 2, label='($\omega$CDM - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff2, color='red', linewidth = 2, label='($\omega_0 \omega_a$CDM - $\Lambda$CDM) / $\Lambda$CDM')
 plt.plot(z, diff3, color='green', linewidth = 2, label='($\Omega_k$-CDM - $\Lambda$CDM) / $\Lambda$CDM')
 plt.plot(z, diff4, color='orange', linewidth = 2, label='(Starobinski (n=1) - $\Lambda$CDM) / $\Lambda$CDM')
 plt.plot(z, diff5, color='darkgoldenrod', linewidth = 2, label='(Starobinski (n=2) - $\Lambda$CDM) / $\Lambda$CDM')

@@ -8,10 +8,12 @@ Created on Tue Jun  4 10:33:39 2024
 
 # Bibliotecas:
 import numpy as np
+from numpy import loadtxt, savetxt
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-
+plt.rcParams['text.usetex'] = True
+from gapp import gp
 
 
 # Parâmetros:
@@ -131,7 +133,7 @@ def fgw0wa(t, y):
 
     O_m = O_m0*t**(-3)
     O_r = O_r0*t**(-4)
-    O_L = O_L0*(t**(-3*(w0 + wa*(1-t)) ) )
+    O_L = O_L0*(t**(-3*(1 + w0 + wa*(1-t)) ) )
 
     H_RG_w = H0*np.sqrt(O_m + O_r + O_L)
     dH_RG_w = - (H_RG_w/t) - 0.5*(H0/t)*(H0/H_RG_w)*(O_m + 2*O_r - 2*O_L)
@@ -629,9 +631,51 @@ fgHS_interp_n3 = interp_func(t_interp)
 
 
 
+################### CURVA SOMBREADA #########################################
+
+data_fz = np.genfromtxt('/home/usuario/Documentos/Dados/fz_data.csv', delimiter=', ')
+
+z_gapp = data_fz[:,0]
+fz = data_fz[:,1]
+sig_fz = data_fz[:,2]
+
+
+# nomeando
+x_gapp = z_gapp
+y_gapp = fz
+e = sig_fz
+
+# xmin, xmax and nstar are interpreted as two-dimensional vectors
+xmin = 0
+xmax = 5.0
+nstar = 1000
+
+# initial values of the hyperparameters of the squared-exponential covariance function
+initheta = [2.0, 2.0]
+
+# initialization of the Gaussian Process
+g = gp.GaussianProcess(x_gapp, y_gapp, e, cXstar=(xmin, xmax, nstar))
+
+# training of the hyperparameters and reconstruction of the function
+(rec, theta) = g.gp(theta=initheta)
+
+xi = rec[:, 0]
+
+y_pred = rec[:, 1]
+sigma  = rec[:, 2]
+
+y_pred_95_less = y_pred - 1.9600*sigma
+y_pred_95_plus = y_pred + 1.9600*sigma
+
+
+######################################################################
+
+
+
+
 # plote
 
-plt.plot(z, fg_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
+plt.plot(z, fg_RG, color='blue', linewidth = 5, linestyle='--', label='$\Lambda$CDM')
 plt.plot(z, fg_w, color='deeppink', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, fg_w0wa, color='red', linewidth = 2, label='$\omega_0 \omega_a$CDM')
 plt.plot(z, fg_k, color='green', linewidth = 2, label='$\Omega_k$-CDM')
@@ -640,7 +684,20 @@ plt.plot(z, fg_S, color='orange', linewidth=2, label='Starobinski (n=1)')
 plt.plot(z, fg_S_n1, color='darkgoldenrod', linewidth=2, label='Starobinski (n=2)')
 plt.plot(z, fgHS_interp, color='purple', linewidth=2, label='Hu-Sawicki (n=1)')
 plt.plot(z, fgHS_interp_n3, color='magenta', linewidth=2, label='Hu-Sawicki (n=2)')
-plt.legend()
+#plt.plot(xi, y_pred, color = 'green', label='Prediction', linestyle="-")
+plt.fill(np.concatenate([xi, xi[::-1]]),
+        np.concatenate([y_pred - 1.9600 * sigma,
+                       (y_pred + 1.9600 * sigma)[::-1]]),
+        alpha=.5, color = 'lightblue', ec='None')
+plt.fill(np.concatenate([xi, xi[::-1]]),
+         np.concatenate([y_pred - 1.00 * sigma,
+                        (y_pred + 1.00 * sigma)[::-1]]),
+         alpha=.5, color = 'dodgerblue', ec='None')
+
+
+plt.ylim(0.4,1.15) 
+plt.xlim(0,1)   
+plt.legend(prop={'size':6.5})
 plt.xlabel('z')
 plt.ylabel('$f(z)$')
 #plt.savefig('f(z)_comparação.png', dpi=520, format='png', bbox_inches='tight')

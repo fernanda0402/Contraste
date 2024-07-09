@@ -11,12 +11,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import sympy as sp
+from scipy.integrate import cumtrapz
+from gapp import gp
 
 
 # constantes
 H0 = 67.4
 O_m0 = 0.315
 O_L0 = 0.7
+#w1 = -1.028
 w0 = -0.957
 wa = -0.29
 O_k0 = 0.0007
@@ -46,7 +49,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
@@ -61,12 +64,12 @@ z = 1/sol.t - 1
 
 
 # plotando o contraste x z
-plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
-plt.legend()
-plt.xlabel('z')
-plt.ylabel('$\delta$')
+#plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
+#plt.legend()
+#plt.xlabel('z')
+#plt.ylabel('$\delta$')
 #plt.savefig('delta(z).png', dpi=520, format='png', bbox_inches='tight')
-plt.show()
+#plt.show()
 
 
 
@@ -81,7 +84,7 @@ def Densidade_w(t, y):    # t é o fator de escala e y é o delta (contraste)
     dD_RG_w = y[1]    # primeira derivada do contraste
 
     O_m = O_m0*t**(-3)  
-    O_L = O_L0*(t**(-3*(w0 + wa*(1-t)) ) )
+    O_L = O_L0*(t**(-3*(1 + w0 + wa*(1-t)) ) )
 
     H_RG_w = H0*np.sqrt(O_m + O_L)    # H(z)
     dH_RG_w = - (H_RG_w/t) - 0.5*(H0/t)*(H0/H_RG_w)*(O_m - 2*O_L)        # derivada do H(z)
@@ -99,7 +102,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
@@ -118,7 +121,7 @@ z = 1/sol_w.t - 1
 # Modelo AB-f(R):
     
 # Condições iniciais
-ti = 0.2
+ti = 0.17
 O_r0 = 0
 mu = 10**(-7)
 k = 0.125
@@ -234,7 +237,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
@@ -275,7 +278,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
@@ -427,7 +430,62 @@ def solD_HS(H0, O_m0, c2, n):
 #print(solD_HS(70,0.3,1,1)[999])
 
 
+######################### CURVA SOMBREADA #####################################
+
+data_fz = np.genfromtxt('/home/usuario/Documentos/Dados/fz_data.csv', delimiter=', ')
+
+z_gapp = data_fz[:,0]
+fz = data_fz[:,1]
+sig_fz = data_fz[:,2]
+
+
+# nomeando
+x_gapp = z_gapp
+y_gapp = fz
+e = sig_fz
+
+# xmin, xmax and nstar are interpreted as two-dimensional vectors
+xmin = 0
+xmax = 5.0
+nstar = 1000
+
+# initial values of the hyperparameters of the squared-exponential covariance function
+initheta = [2.0, 2.0]
+
+# initialization of the Gaussian Process
+g = gp.GaussianProcess(x_gapp, y_gapp, e, cXstar=(xmin, xmax, nstar))
+
+# training of the hyperparameters and reconstruction of the function
+(rec, theta) = g.gp(theta=initheta)
+
+xi = rec[:, 0]
+
+y_pred = rec[:, 1]
+sigma  = rec[:, 2]
+
+y_pred_95_less = y_pred - 1.9600*sigma
+y_pred_95_plus = y_pred + 1.9600*sigma
+
+
+
+
+#### definindo o fator de escala
+
+a = 1/(1+xi)
+
+x1 = cumtrapz(y_pred, x = np.log(a), initial = 0.001)
+
+delta = np.exp(x1)
+sig_d = np.sqrt( (delta**2)*(y_pred**2)*(sigma**2) )
+
+
+
+
+
+
+
 # plotando o contraste x z
+
 plt.plot(z, D_RG_w, color='red', linewidth = 2, label='$\omega_0 \omega_a$CDM')
 plt.plot(z, solD_S(70,0.3,1,1), color='orange', linewidth = 2, label='Starobinski (n=1)')
 plt.plot(z, solD_S(70,0.3,1,2), color='darkgoldenrod', linewidth = 2, label='Starobinski (n=2)')
@@ -437,7 +495,19 @@ plt.plot(z, D_RG_w1, color='deeppink', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, D_RG_k, color='green', linewidth = 2, label='$\Omega_k$-CDM')
 plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
 plt.plot(z, sol_DAB(70, 0.3, 1.6), color='black', linewidth = 2, label='$R^2$_AB model')
+
+#plt.fill(np.concatenate([xi, xi[::-1]]),
+#        np.concatenate([delta - 1.9600 * sig_d,
+#                       (delta + 1.9600 * sig_d)[::-1]]),
+#        alpha=.5, color = 'lightblue', ec='None')
+#plt.fill(np.concatenate([xi, xi[::-1]]),
+#         np.concatenate([delta - 1.00 * sig_d,
+#                        (delta + 1.00 * sig_d)[::-1]]),
+#         alpha=.5, color = 'dodgerblue', ec='None')
+
 plt.legend()
+#plt.ylim(0.4,1.0)
+#plt.xlim(0,1)
 plt.xlabel('z')
 plt.ylabel('$\delta(z)$')
 #plt.savefig('delta(z)_comparacao.png', dpi=520, format='png', bbox_inches='tight')
