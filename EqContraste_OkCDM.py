@@ -44,7 +44,7 @@ t_span = [0.17, 1]   # intervalo de integração do fator de escala
 t = np.linspace(0.17, 1, 1000)
 
 # Condições iniciais:
-y0 = [0.2, 1] 
+y0 = [0.17, 1] 
 
 
 # Solução:
