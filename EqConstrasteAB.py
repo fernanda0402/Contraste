@@ -16,7 +16,7 @@ import pandas as pd
 # Parâmetros:
 
 # Condições iniciais
-ti = 0.2
+ti = 0.17
 O_r0 = 0
 mu = 10**(-7)
 k = 0.125
