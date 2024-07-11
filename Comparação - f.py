@@ -27,7 +27,7 @@ n3 = 2
 O_L0 = 0.7
 w0 = -0.957
 wa = -0.29
-O_k0 = 0.0007   
+O_k0 = -0.056 
 b = 2
 mu = 10**(-7)
 
@@ -171,47 +171,22 @@ z = 1/sol_w.t - 1
 
 ####################################################################################
 
-# Modelo Ok-CDN:
-def fg_k(t, y):
-    fg_k  = y[0]
 
-    O_m = O_m0*t**(-3)
-    O_r = O_r0*t**(-4)
-    O_k = O_k0*t**(-2)
-    O_L = 1 - O_m0 - O_k0
+# Modelo Ok-CDM:
 
-    H_RG_k = H0*np.sqrt(O_m + O_r + O_L + O_k)
-    dH_RG_k = - (H_RG_k/t) - 0.5*(H0/t)*(H0/H_RG_k)*(O_m + 2*O_r - 2*O_L)
+a = np.linspace(0.17, 1, 1000) 
 
-    faux1 = 3*H0**2
-    faux2 = 2*(t**2)*(H_RG_k**2)
+z_LC = (1/a) - 1
 
-    dfg_k = - ((dH_RG_k/H_RG_k) + ((2+fg_k)/t))*fg_k + (3/2)*((H0/H_RG_k)**2)*(O_m/t)  # equação diferencial para o f
-    return dfg_k
+O_L1 = 1 - O_m0 - O_k0
+     
+H_LC = H0*np.sqrt(O_m0*(a**(-3)) + O_L1 + O_k0*(a**(-2)))
+
+Om = O_m0*(a**(-3)) / ( (H_LC/H0)**2 )
+
+f_LC = Om**0.55
 
 
-# Integração:
-t_span =[p, 1]
-t = np.linspace(p, 1, 1000)
-
-
-# Condições iniciais:
-ti = p
-Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
-O_mi = O_m0*ti**(-3)
-O_ri = O_r0*ti**(-4)
-O_L = 1 - O_m0
-fgi = ((H0/Hi)**2 * O_mi)**(6/11)
-y0 = [fgi]
-
-
-# Solução RG:
-sol_k = solve_ivp(fg_k, t_span, y0, t_eval=t, method='LSODA')
-fg_k = sol_k.y[0]
-
-
-# definindo o redshift
-z = 1/sol_k.t - 1
 
 
 #################################################################################### 
@@ -678,7 +653,7 @@ y_pred_95_plus = y_pred + 1.9600*sigma
 plt.plot(z, fg_RG, color='blue', linewidth = 5, linestyle='--', label='$\Lambda$CDM')
 plt.plot(z, fg_w, color='deeppink', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, fg_w0wa, color='red', linewidth = 2, label='$\omega_0 \omega_a$CDM')
-plt.plot(z, fg_k, color='green', linewidth = 2, label='$\Omega_k$-CDM')
+plt.plot(z_LC, f_LC, color='green', label='$\Omega_k$-CDM')
 plt.plot(z, fg_AB, color='black', linewidth = 2, label='$R^2$_AB model')
 plt.plot(z, fg_S, color='orange', linewidth=2, label='Starobinski (n=1)')
 plt.plot(z, fg_S_n1, color='darkgoldenrod', linewidth=2, label='Starobinski (n=2)')
@@ -691,7 +666,7 @@ plt.fill(np.concatenate([xi, xi[::-1]]),
         alpha=.5, color = 'lightblue', ec='None')
 plt.fill(np.concatenate([xi, xi[::-1]]),
          np.concatenate([y_pred - 1.00 * sigma,
-                        (y_pred + 1.00 * sigma)[::-1]]),
+                       (y_pred + 1.00 * sigma)[::-1]]),
          alpha=.5, color = 'dodgerblue', ec='None')
 
 
@@ -700,7 +675,7 @@ plt.xlim(0,1)
 plt.legend(prop={'size':6.5})
 plt.xlabel('z')
 plt.ylabel('$f(z)$')
-#plt.savefig('f(z)_comparação.png', dpi=520, format='png', bbox_inches='tight')
+#plt.savefig('f(z)_comparação_z=1.png', dpi=520, format='png', bbox_inches='tight')
 plt.show()
 
 
