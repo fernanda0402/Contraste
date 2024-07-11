@@ -27,7 +27,7 @@ def fg_k(t, y):
     O_k = O_k0*t**(-2)
     O_L = 1 - O_m0 - O_k0
 
-    H_RG_k = H0*np.sqrt(O_m + O_r + O_L)
+    H_RG_k = H0*np.sqrt(O_m + O_r + O_L + O_k)
     dH_RG_k = - (H_RG_k/t) - 0.5*(H0/t)*(H0/H_RG_k)*(O_m + 2*O_r - 2*O_L)
 
     faux1 = 3*H0**2
