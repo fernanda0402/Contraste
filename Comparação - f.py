@@ -651,31 +651,31 @@ y_pred_95_plus = y_pred + 1.9600*sigma
 # plote
 
 plt.plot(z, fg_RG, color='blue', linewidth = 5, linestyle='--', label='$\Lambda$CDM')
-plt.plot(z, fg_w, color='deeppink', linewidth = 2, label='$\omega$CDM')
-plt.plot(z, fg_w0wa, color='red', linewidth = 2, label='$\omega_0 \omega_a$CDM')
+plt.plot(z, fg_w, color='red', linewidth = 2, label='$\omega$CDM')
+plt.plot(z, fg_w0wa, color='darkgoldenrod', linewidth = 2, label='$\omega_0 \omega_a$CDM')
 plt.plot(z_LC, f_LC, color='green', label='$\Omega_k$-CDM')
 plt.plot(z, fg_AB, color='black', linewidth = 2, label='$R^2$_AB model')
 plt.plot(z, fg_S, color='orange', linewidth=2, label='Starobinski (n=1)')
-plt.plot(z, fg_S_n1, color='darkgoldenrod', linewidth=2, label='Starobinski (n=2)')
+plt.plot(z, fg_S_n1, color='deeppink', linewidth=2, label='Starobinski (n=2)')
 plt.plot(z, fgHS_interp, color='purple', linewidth=2, label='Hu-Sawicki (n=1)')
 plt.plot(z, fgHS_interp_n3, color='magenta', linewidth=2, label='Hu-Sawicki (n=2)')
-#plt.plot(xi, y_pred, color = 'green', label='Prediction', linestyle="-")
+plt.plot(xi, y_pred, color = 'green', label='Prediction', linestyle="-")
 plt.fill(np.concatenate([xi, xi[::-1]]),
         np.concatenate([y_pred - 1.9600 * sigma,
                        (y_pred + 1.9600 * sigma)[::-1]]),
         alpha=.5, color = 'lightblue', ec='None')
 plt.fill(np.concatenate([xi, xi[::-1]]),
-         np.concatenate([y_pred - 1.00 * sigma,
+        np.concatenate([y_pred - 1.00 * sigma,
                        (y_pred + 1.00 * sigma)[::-1]]),
          alpha=.5, color = 'dodgerblue', ec='None')
 
 
 plt.ylim(0.4,1.15) 
-plt.xlim(0,1)   
+#plt.xlim(0,1)   
 plt.legend(prop={'size':6.5})
 plt.xlabel('z')
 plt.ylabel('$f(z)$')
-#plt.savefig('f(z)_comparação_z=1.png', dpi=520, format='png', bbox_inches='tight')
+#plt.savefig('f(z)_comparação_new.png', dpi=520, format='png', bbox_inches='tight')
 plt.show()
 
 
