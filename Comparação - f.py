@@ -282,8 +282,12 @@ z = 1/solAB.t - 1
 ##################################################################################
 
 
-# Modelo Starobinski (n = 1)
-def f_S(t, y, lbd, n): # lbd é o parâmetro lambda
+# Modelo Starobinski 
+def f_S(t, y, H0, O_m0, lbd, n): # lbd é o parâmetro lambda
+    yH = y[0]
+    YH = y[1]
+    fg_S = y[2]
+    
     yH = y[0]
     YH = y[1]        # YH = dyH/da
     fg_s = y[2]
@@ -327,62 +331,22 @@ def f_S(t, y, lbd, n): # lbd é o parâmetro lambda
 
     dfg_s =  - ((dH_S/H_S) + ((2 + fg_s)/t))*fg_s + (3/2)*(H0/H_S)**2*Geffn*(O_m/t)
     return [YH, dYH, dfg_s]
-
-
-
-# Integração:
-t_span =[p, 1]
-t = np.linspace(p, 1, 1000)
-
-
-
-# Condições iniciais:
-ti = p
-Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
-O_mi = O_m0*ti**(-3)
-O_ri = O_r0*ti**(-4)
-O_L = 1 - O_m0
-Hi = H0*np.sqrt(O_mi + O_ri + O_L)
-dHi = - ((H0*H0)/(2*ti*Hi))*(3*O_mi + 4*O_ri)
-fgi = ((H0/Hi)**2 * O_mi)**(6/11)  # no passado, todas as teorias f(R) recaem na RG
-y0 = [Hi, dHi, fgi]
-
-
-# Solução
-lbd = 1 
-n = 1
-sol_s = solve_ivp(f_S, t_span, y0, t_eval=t, args=(lbd, n), method='LSODA', rtol=1e-6)
-fg_S = sol_s.y[2]
-
-
-#######################################################################################
-
-
-# Modelo Starobinski (n = 2)
-def f_S(t, y, lbd, n1): # lbd é o parâmetro lambda
-    yH = y[0]
-    YH = y[1]        # YH = dyH/da
-    fg_s = y[2]
-
     O_m = O_m0*t**(-3)
     O_r = O_r0*t**(-4)
-
+    
     chi = O_r0/O_m0
     ms = (H0**2)*O_m0
     O_L = 1 - O_m0
-
     R = 3*ms*(4*yH + t*YH + t**(-3))
 
-    Rs = 6*(H0**2)*(1 - O_m0)/lbd
+    Rs = 6*(H0**2)*O_L/lbd
     star = 1 + (R/Rs)**2
-
-    f = R + lbd*Rs*( (star**(-n1)) - 1 )
-    fR = 1 - 2*n1*lbd*(R/Rs)*((star)**(-(n1+1)))
-    fRR = (2*n1*lbd/Rs)*( 2*(n1+1)*((R/Rs)**2)*(star**(-n1-2)) - (star**(-n1-1)) )
+    f = R + lbd*Rs*((star**(-n)) - 1)
+    fR = 1 - 2*n*lbd*(R/Rs)*((star)**(-(n+1)))
+    fRR = (2*n*lbd/Rs)*(2*(n+1)*((R/Rs)**2)*(star**(-n-2)) - (star**(-n-1)))
 
     yaux1 = yH + t**(-3) + chi*t**(-4)
     yaux2 = t**(-3) + 2*chi*t**(-4)
-
     j1 = 4 + (1/yaux1)*(1-fR)/(6*ms*fRR)
     j2 = (1/yaux1)*(2-fR)/(3*ms*fRR)
     j3 = - 3*t**(-3) - (((1-fR)*yaux2 + (R-f)/(3*ms))/yaux1)*(1/(6*ms*fRR))
@@ -395,48 +359,46 @@ def f_S(t, y, lbd, n1): # lbd é o parâmetro lambda
     H_S = np.sqrt(ms*(yH + (1/t)**3 + chi*(1/t)**4))
     dH_S = (R/(6*t*H_S)) - (2*H_S/t)
 
-    gaux3 = (fRR/fR)*(k*(H0/100)/t)**2
+    gaux3 = (fRR/fR)*(k/t)**2
     Geffn = (1/(fR))*(1 + 4*gaux3)/(1 + 3*gaux3)
+    faux1 = 3*Geffn*H0**2
+    faux2 = 2*t*H_S*H_S
 
-    fAB1 = 3*Geffn*H0**2
-    fAB2 = 2*t*t*H_S*H_S
+    dfg_S = - ((dH_S/H_S) + ((2 + fg_S)/t))*fg_S + (faux1/faux2)*O_m
 
-    dfg_s =  - ((dH_S/H_S) + ((2 + fg_s)/t))*fg_s + (3/2)*(H0/H_S)**2*Geffn*(O_m/t)
-    return [YH, dYH, dfg_s]
-
-
-
-# Integração:
-t_span =[p, 1]
-t = np.linspace(p, 1, 1000)
+    return [YH, dYH, dfg_S]
 
 
+def fg_S(H0, O_m0, lbd, n):
+  # Integração:
+  t_span =[ti, 1]
 
-# Condições iniciais:
-ti = p
-Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
-O_mi = O_m0*ti**(-3)
-O_ri = O_r0*ti**(-4)
-O_L = 1 - O_m0
-Hi = H0*np.sqrt(O_mi + O_ri + O_L)
-dHi = - ((H0*H0)/(2*ti*Hi))*(3*O_mi + 4*O_ri)
-fgi = ((H0/Hi)**2 * O_mi)**(6/11)  # no passado, todas as teorias f(R) recaem na RG
-y0 = [Hi, dHi, fgi]
+  # Condições iniciais:
+  Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
+  O_mi = O_m0*ti**(-3)
+  O_ri = O_r0*ti**(-4)
+  O_L = 1 - O_m0
+  fgi = ((H0/Hi)**2 * O_mi)**(6/11)
+  y0 = [(1-O_m0)/O_m0, 0, fgi]
+
+  # Solução RG:
+  sol_S = solve_ivp(f_S, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, lbd, n))
+  fg_S = sol_S.y[2]
+  return fg_S
 
 
-# Solução
-lbd = 1 
-n1 = 2
-sol_s = solve_ivp(f_S, t_span, y0, t_eval=t, args=(lbd, n1), method='LSODA', rtol=1e-6)
-fg_S_n1 = sol_s.y[2]
+#######################################################################################
+
+
+
 
 
 ####################################################################################
 
 
-# Modelo de Hu-Sawicki (n = 1)
+# Modelo de Hu-Sawicki 
 
-def f_HS(t, y, H0, O_m0, O_r0, c2, n2):
+def f_HS(t, y, H0, O_m0, c2, n2):
     yH = y[0]
     YH = y[1]        # YH = dyH/da
     fg_HS = y[2]
@@ -483,126 +445,34 @@ def f_HS(t, y, H0, O_m0, O_r0, c2, n2):
     fAB1 = 3*Geffn*H0**2
     fAB2 = 2*t*t*H_HS*H_HS
 
-    dfg_HS = - ((dH_HS/H_HS) + ((2 + fg_HS)/t))*fg_HS + (3/2)*(H0/H_HS)**2*Geffn*(O_m/t)
+    dfg_HS = - ((dH_HS/H_HS) + ((2 + fg_HS)/t))*fg_HS + (3/2)*((H0/H_HS)**2)*Geffn*(O_m/t)
     return [YH, dYH, dfg_HS]
 
 
 
 
-# Integração:
-t_span =[p, 1]
-t = np.linspace(p, 1, 1000)
+def fg_HS(H0, O_m0, c2, n2):
+  # Integração:
+  t_span =[ti, 1]
 
+  # Condições iniciais:
+  Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
+  O_mi = O_m0*ti**(-3)
+  O_ri = O_r0*ti**(-4)
+  O_L = 1 - O_m0
+  fgi = ((H0/Hi)**2 * O_mi)**(6/11)
+  y0 = [(1-O_m0)/O_m0, 0, fgi]
 
-# Condições iniciais:
-ti = p
-Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
-O_mi = O_m0*ti**(-3)
-O_ri = O_r0*ti**(-4)
-O_L = 1 - O_m0
-Hi = H0*np.sqrt(O_mi + O_ri + O_L)
-dHi = - ((H0*H0)/(2*ti*Hi))*(3*O_mi + 4*O_ri)
-ddHi = 0.5*(H0/(ti*Hi))**2*(Hi + ti*dHi)*(3*O_mi + 4*O_ri) + 0.5*(H0/(ti*Hi))**2*Hi*(9*O_mi + 16*O_ri)
-fgi = ((H0/Hi)**2 * O_mi)**(6/11)  # no passado, todas as teorias f(R) recaem na RG
-y0 = [Hi, dHi, fgi]
-
-
-
-# Solução:
-solHS = solve_ivp(f_HS, t_span, y0, t_eval=t, method='RK45', args=(H0, O_m0, O_r0, c2, n2), rtol=1e-3, atol=1e-6)
-
-# Ajustando o intervalo de interpolação
-t_interp = np.linspace(solHS.t[0], solHS.t[-1], 1000)
-
-interp_func = interp1d(solHS.t, solHS.y[2], kind='cubic')
-fgHS_interp = interp_func(t_interp)
+  # Solução RG:
+  sol_HS = solve_ivp(f_HS, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, c2, n2))
+  fg_HS = sol_HS.y[2]
+  return fg_HS
 
 
 ###################################################################################3
 
 
-# Modelo de Hu-Sawicki (n = 2)
 
-def f_HS(t, y, H0, O_m0, O_r0, c2, n3):
-    yH = y[0]
-    YH = y[1]        # YH = dyH/da
-    fg_HS = y[2]
-
-    O_m = O_m0*t**(-3)
-    O_r = O_r0*t**(-4)
-
-    chi = O_r0/O_m0
-    ms = (H0**2)*O_m0
-    O_L = 1 - O_m0
-
-    c1 = 6*c2*(O_L/O_m0)
-
-    R = 3*ms*(4*yH + t*YH + t**(-3))
-
-    xn1 = (R/ms)**n3
-    xn2 = c1/(ms**n3)
-    xn3 = (n3+1)*(c2/ms)*R**(2*(n3-1))
-    xn4 = (n3-1)*R**(n3-2)
-    xn5 = ((c2*xn1) + 1)
-
-    f = R - ms*((c1*xn1)/((c2*xn1)  + 1))
-    fR = 1 - n2*xn2*ms*((R**(n3-1))/(xn5**2))
-    fRR = n3*xn2*ms*( (xn3 - xn4)/(xn5**3))
-
-    yaux1 = yH + t**(-3) + chi*t**(-4)
-    yaux2 = t**(-3) + 2*chi*t**(-4)
-
-    j1 = 4 + (1/yaux1)*(1-fR)/(6*ms*fRR)
-    j2 = (1/yaux1)*(2-fR)/(3*ms*fRR)
-    j3 = - 3*t**(-3) - (((1-fR)*yaux2 + (R-f)/(3*ms))/yaux1)*(1/(6*ms*fRR))
-    J1 = (1/t)*(1 + j1)
-    J2 = (1/t)*(j2/t)
-    J3 = (1/t)*(j3/t)
-
-    dYH = - J1*YH - J2*yH - J3
-
-    H_HS = np.sqrt(ms*(yH + (1/t)**3 + chi*(1/t)**4))
-    dH_HS = (R/(6*t*H_HS)) - (2*H_HS/t)
-
-    gaux3 = (fRR/fR)*(k*(H0/100)/t)**2
-    Geffn = (1/(fR))*(1 + 4*gaux3)/(1 + 3*gaux3)
-
-    fAB1 = 3*Geffn*H0**2
-    fAB2 = 2*t*t*H_HS*H_HS
-
-    dfg_HS = - ((dH_HS/H_HS) + ((2 + fg_HS)/t))*fg_HS + (3/2)*(H0/H_HS)**2*Geffn*(O_m/t)
-    return [YH, dYH, dfg_HS]
-
-
-
-
-# Integração:
-t_span =[p, 1]
-t = np.linspace(p, 1, 1000)
-
-
-# Condições iniciais:
-ti = p
-Hi = H0*np.sqrt(O_m0*ti**(-3) + (1 - O_m0))
-O_mi = O_m0*ti**(-3)
-O_ri = O_r0*ti**(-4)
-O_L = 1 - O_m0
-Hi = H0*np.sqrt(O_mi + O_ri + O_L)
-dHi = - ((H0*H0)/(2*ti*Hi))*(3*O_mi + 4*O_ri)
-ddHi = 0.5*(H0/(ti*Hi))**2*(Hi + ti*dHi)*(3*O_mi + 4*O_ri) + 0.5*(H0/(ti*Hi))**2*Hi*(9*O_mi + 16*O_ri)
-fgi = ((H0/Hi)**2 * O_mi)**(6/11)  # no passado, todas as teorias f(R) recaem na RG
-y0 = [Hi, dHi, fgi]
-
-
-
-# Solução:
-solHS = solve_ivp(f_HS, t_span, y0, t_eval=t, method='RK45', args=(H0, O_m0, O_r0, c2, n3), rtol=1e-3, atol=1e-6)
-
-# Ajustando o intervalo de interpolação
-t_interp = np.linspace(solHS.t[0], solHS.t[-1], 1000)
-
-interp_func = interp1d(solHS.t, solHS.y[2], kind='cubic')
-fgHS_interp_n3 = interp_func(t_interp)
 
 
 
@@ -650,33 +520,75 @@ y_pred_95_plus = y_pred + 1.9600*sigma
 
 # plote
 
-plt.plot(z, fg_RG, color='blue', linewidth = 5, linestyle='--', label='$\Lambda$CDM')
+plt.plot(z, fg_RG, color='blue', linewidth = 4, linestyle='--', label='$\Lambda$CDM')
 plt.plot(z, fg_w, color='red', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, fg_w0wa, color='darkgoldenrod', linewidth = 2, label='$\omega_0 \omega_a$CDM')
-plt.plot(z_LC, f_LC, color='green', label='$\Omega_k$-CDM')
+plt.plot(z_LC, f_LC, color='green', label='$\Omega_k$-CDM', linewidth = 2)
 plt.plot(z, fg_AB, color='black', linewidth = 2, label='$R^2$_AB model')
-plt.plot(z, fg_S, color='orange', linewidth=2, label='Starobinski (n=1)')
-plt.plot(z, fg_S_n1, color='deeppink', linewidth=2, label='Starobinski (n=2)')
-plt.plot(z, fgHS_interp, color='purple', linewidth=2, label='Hu-Sawicki (n=1)')
-plt.plot(z, fgHS_interp_n3, color='magenta', linewidth=2, label='Hu-Sawicki (n=2)')
-plt.plot(xi, y_pred, color = 'green', label='Prediction', linestyle="-")
+plt.plot(z, fg_S(70, 0.3, 2, 1), color='orange', linewidth=2, label='Starobinski (n=1)', linestyle = '-.')
+plt.plot(z, fg_S(70, 0.3, 2, 2), color='deeppink', linewidth=2, label='Starobinski (n=2)', linestyle = '-.')
+plt.plot(z, fg_HS(70, 0.3, 2, 1), color='purple', linewidth=2, label='Hu-Sawicki (n=1)')
+plt.plot(z, fg_HS(70, 0.3, 2, 2), color='magenta', linewidth=2, label='Hu-Sawicki (n=2)')
+plt.plot(xi, y_pred, color = 'darkblue', linewidth=2, label='Prediction', linestyle="dotted")
 plt.fill(np.concatenate([xi, xi[::-1]]),
-        np.concatenate([y_pred - 1.9600 * sigma,
-                       (y_pred + 1.9600 * sigma)[::-1]]),
+        np.concatenate([y_pred - 1.9100 * sigma,
+                      (y_pred + 1.9100 * sigma)[::-1]]),
         alpha=.5, color = 'lightblue', ec='None')
 plt.fill(np.concatenate([xi, xi[::-1]]),
         np.concatenate([y_pred - 1.00 * sigma,
                        (y_pred + 1.00 * sigma)[::-1]]),
          alpha=.5, color = 'dodgerblue', ec='None')
 
+#plt.fill(np.concatenate([xi, xi[::-1]]),
+#        np.concatenate([y_pred - 2.997 * sigma,
+#                       (y_pred + 2.997 * sigma)[::-1]]),
+#         alpha=.5, color = 'lightblue', ec='None')
 
-plt.ylim(0.4,1.15) 
-#plt.xlim(0,1)   
-plt.legend(prop={'size':6.5})
-plt.xlabel('z')
+
+plt.ylim(0.4,1) 
+plt.xlim(0,1)   
+plt.legend(prop={'size':6.5}, loc='upper left')
+plt.xlabel('$z$')
 plt.ylabel('$f(z)$')
-#plt.savefig('f(z)_comparação_new.png', dpi=520, format='png', bbox_inches='tight')
+#plt.savefig('f(z)_comparação_new2.png', dpi=520, format='png', bbox_inches='tight')
 plt.show()
+
+
+
+###################################################################################
+
+plt.plot(z, fg_RG, color='blue', linewidth = 4, linestyle='--', label='$\Lambda$CDM')
+plt.plot(z, fg_AB, color='black', linewidth = 2, label='$R^2$_AB model')
+plt.plot(z, fg_S(70, 0.3, 2, 1), color='orange', linewidth=2, label='Starobinski (n=1)', linestyle = '-.')
+plt.plot(z, fg_S(70, 0.3, 2, 2), color='deeppink', linewidth=2, label='Starobinski (n=2)', linestyle = '-.')
+plt.plot(z, fg_HS(70, 0.3, 2, 1), color='purple', linewidth=2, label='Hu-Sawicki (n=1)')
+plt.plot(z, fg_HS(70, 0.3, 2, 2), color='magenta', linewidth=2, label='Hu-Sawicki (n=2)')
+
+
+plt.plot(xi, y_pred, color = 'darkblue', linewidth=2, label='Prediction', linestyle="dotted")
+plt.fill(np.concatenate([xi, xi[::-1]]),
+        np.concatenate([y_pred - 1.9100 * sigma,
+                      (y_pred + 1.9100 * sigma)[::-1]]),
+        alpha=.5, color = 'lightblue', ec='None')
+plt.fill(np.concatenate([xi, xi[::-1]]),
+        np.concatenate([y_pred - 1.00 * sigma,
+                       (y_pred + 1.00 * sigma)[::-1]]),
+         alpha=.5, color = 'dodgerblue', ec='None')
+
+#plt.fill(np.concatenate([xi, xi[::-1]]),
+#        np.concatenate([y_pred - 2.997 * sigma,
+#                       (y_pred + 2.997 * sigma)[::-1]]),
+#         alpha=.5, color = 'lightblue', ec='None')
+
+
+plt.ylim(0.4,1) 
+plt.xlim(0,1)   
+plt.legend(prop={'size':7.5})
+plt.xlabel('$z$')
+plt.ylabel('$f(z)$')
+#plt.savefig('f(z)_comparação_so_f(R).png', dpi=520, format='png', bbox_inches='tight')
+plt.show()
+
 
 
 
