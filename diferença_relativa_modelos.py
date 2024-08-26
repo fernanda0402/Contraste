@@ -403,6 +403,8 @@ def solD_HS(H0, O_m0, c2, n):
 
 diff6 = (solD_HS(70,0.3,1,1) - D_RG) / D_RG
 
+diff8 = (solD_HS(70,0.3,1,2) - D_RG) / D_RG
+
 
 ########################################################################################
 
@@ -446,19 +448,26 @@ diff7 = (D_RG_w - D_RG) / D_RG
 
 
 
+######################################################################################
+
+
+
+
+
 # PLOTE
 
-plt.plot(z, diff1, color='blue', linewidth = 2, label='($R^2$AB - $\Lambda$CDM) / $\Lambda$CDM')
-plt.plot(z, diff2, color='deeppink', linewidth = 2, label='($\omega$CDM - $\Lambda$CDM) / $\Lambda$CDM')
-plt.plot(z, diff2, color='red', linewidth = 2, label='($\omega_0 \omega_a$CDM - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff1, color='black', linewidth = 2, label='($R^2$AB - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff2, color='red', linewidth = 2, label='($\omega$CDM - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff2, color='darkgoldenrod', linewidth = 2, label='($\omega_0 \omega_a$CDM - $\Lambda$CDM) / $\Lambda$CDM')
 #plt.plot(z, diff3, color='green', linewidth = 2, label='($\Omega_k$-CDM - $\Lambda$CDM) / $\Lambda$CDM')
-plt.plot(z, diff4, color='orange', linewidth = 2, label='(Starobinski (n=1) - $\Lambda$CDM) / $\Lambda$CDM')
-plt.plot(z, diff5, color='darkgoldenrod', linewidth = 2, label='(Starobinski (n=2) - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff4, color='orange', linewidth = 2, label='(Starobinski (n=1) - $\Lambda$CDM) / $\Lambda$CDM', linestyle = '-.')
+plt.plot(z, diff5, color='deeppink', linewidth = 2, label='(Starobinski (n=2) - $\Lambda$CDM) / $\Lambda$CDM', linestyle = '-.')
 plt.plot(z, diff6, color='purple', linewidth = 2, label='(Hu-Sawicki (n=1) - $\Lambda$CDM) / $\Lambda$CDM')
+plt.plot(z, diff6, color='magenta', linewidth = 2, label='(Hu-Sawicki (n=1) - $\Lambda$CDM) / $\Lambda$CDM')
 
 #plt.ylim(-0.02, 0.002)
 plt.legend()
-plt.xlabel('z')
-#plt.savefig('dif_rel.png', dpi=520, format='png', bbox_inches='tight')
+plt.xlabel('$z$')
+#plt.savefig('dif_rel.pdf', dpi=520, format='pdf', bbox_inches='tight')
 plt.show()
 
