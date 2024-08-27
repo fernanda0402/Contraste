@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import sympy as sp
 from scipy.integrate import cumtrapz
-#from gapp import gp
+from gapp import gp
 plt.rcParams['text.usetex'] = True
 
 # constantes
@@ -24,6 +24,61 @@ O_L0 = 0.7
 w0 = -0.957
 wa = -0.29
 O_k0 = -0.056
+
+
+
+# SOMBREADA
+
+# baixando os dados de f
+
+data_fz = np.genfromtxt('/home/usuario/Documentos/Dados/fz_data.csv', delimiter=', ')
+
+z_gapp = data_fz[:,0]
+fz = data_fz[:,1]
+sig_fz = data_fz[:,2]
+
+
+# nomeando
+x_gapp = z_gapp
+y_gapp = fz
+e = sig_fz
+
+# xmin, xmax and nstar are interpreted as two-dimensional vectors
+xmin = 0
+xmax = 5.0
+nstar = 1000
+
+# initial values of the hyperparameters of the squared-exponential covariance function
+initheta = [2.0, 2.0]
+
+# initialization of the Gaussian Process
+g = gp.GaussianProcess(x_gapp, y_gapp, e, cXstar=(xmin, xmax, nstar))
+
+# training of the hyperparameters and reconstruction of the function
+(rec, theta) = g.gp(theta=initheta)
+
+xi = rec[:, 0]
+
+y_pred = rec[:, 1]
+sigma  = rec[:, 2]
+
+y_pred_95_less = y_pred - 1.9600*sigma
+y_pred_95_plus = y_pred + 1.9600*sigma
+
+
+
+
+#### definindo o fator de escala
+
+a = 1/(1+xi)
+
+x1 = cumtrapz(y_pred, x = np.log(a), initial = 0.001)
+
+delta_rec = np.exp(x1)
+
+sig_d = np.sqrt( (delta_rec**2)*(sigma**2) )
+
+#####################################################################################
 
 
 
@@ -248,22 +303,46 @@ z = 1/sol_w1.t - 1
 ################################################################################
 
 # Modelo O_k-CDM:
+    
+t = np.linspace(0.17, 1, 1000)
+z = (1/t) - 1
+    
+def growth(O_m0, O_K0):
+  O_m = O_m0*t**(-3)
+  O_K = O_K0*t**(-2)
+  O_L = 1 - O_m0
+  E2 = O_m + O_K + O_L
+  O_M = O_m0*t**(-3)/(E2)
+  f_K = O_M**(0.55)
+  return f_K
 
-a1 = np.linspace(0.17, 1, 1000)
+def ln_delta(O_m0, O_K0):
+  y = growth(O_m0, O_K0)/t
+  ln_delta = cumtrapz(y, t, initial=0)
+  return ln_delta
 
-z_LC = (1/a1) - 1
+def delta(O_m0, O_K0):
+  delta = np.exp(ln_delta(O_m0, O_K0))
+  delta = delta/delta[999]
+  return delta
 
-O_L1 = 1 - O_m0 - O_k0
 
-H_LC = H0*np.sqrt(O_m0*(a1**(-3)) + O_L1 + O_k0*(a1**(-2)))
 
-Om = O_m0*(a1**(-3)) / ( (H_LC/H0)**2 )
+#a1 = np.linspace(0.17, 1, 1000)
 
-f_LC = Om**0.55
+#z_LC = (1/a1) - 1
 
-x_1 = cumtrapz(f_LC, x = np.log(a1), initial = 0.001)
+#O_L1 = 1 - O_m0 - O_k0
 
-delta = np.exp(x_1)
+#H_LC = H0*np.sqrt(O_m0*(a1**(-3)) + O_L1 + O_k0*(a1**(-2)))
+
+#Om = O_m0*(a1**(-3)) / ( (H_LC/H0)**2 )
+
+#f_LC = Om**0.55
+
+#x_1 = cumtrapz(f_LC, x = np.log(a1), initial = 0.001)
+
+#delta = np.exp(x_1)
 
 
 
@@ -407,25 +486,48 @@ def solD_HS(H0, O_m0, c2, n):
 #print(solD_HS(70,0.3,1,1)[999])
 
 
+################################################################################
+
+
+
 
 # plotando o contraste x z
 
 plt.plot(z, D_RG_w, color='darkgoldenrod', linewidth = 2, label='$\omega_0 \omega_a$CDM')
-plt.plot(z, solD_S(70,0.3,1,1), color='orange', linewidth = 2, label='Starobinski (n=1)')
-plt.plot(z, solD_S(70,0.3,1,2), color='deeppink', linewidth = 2, label='Starobinski (n=2)')
+plt.plot(z, solD_S(70,0.3,1,1), color='orange', linewidth = 2, label='Starobinski (n=1)', linestyle = '-.')
+plt.plot(z, solD_S(70,0.3,1,2), color='deeppink', linewidth = 2, label='Starobinski (n=2)', linestyle = '-.')
 plt.plot(z, solD_HS(70,0.3,1,1), color='purple', linewidth = 2, label='Hu-Sawicki (n=1)')
 plt.plot(z, solD_HS(70,0.3,1,2), color='magenta', linewidth = 2, label='Hu-Sawicki (n=2)')
 plt.plot(z, D_RG_w1, color='red', linewidth = 2, label='$\omega$CDM')
-plt.plot(z_LC, delta, color='green', label='$\Omega_k$-CDM')
-plt.plot(z, D_RG, color='blue', linewidth = 2, label='$\Lambda$CDM')
+plt.plot(z, delta(0.3, -0.056)-0.21, color='green', label='$\Omega_k$-CDM-0.21')
+plt.plot(z, D_RG, color='blue', linewidth = 3, label='$\Lambda$CDM', linestyle='--')
 plt.plot(z, sol_DAB(70, 0.3, 1.6), color='black', linewidth = 2, label='$R^2$_AB model')
 
-plt.legend()
-plt.ylim(0.45,0.85)
+plt.plot(xi, delta_rec-0.21, color='navy', linewidth = 2, label='Prediction-0.21', linestyle='dotted' )
+
+
+plt.fill(np.concatenate([xi, xi[::-1]]),
+        np.concatenate([delta_rec-0.21 - 1.00 * sig_d,
+                        (delta_rec-0.21 + 1.00 * sig_d)[::-1]]),
+        alpha=.5, color = 'cornflowerblue', ec='None')
+
+plt.fill(np.concatenate([xi, xi[::-1]]),
+        np.concatenate([delta_rec-0.21 - 1.9600 * sig_d,
+                       (delta_rec-0.21 + 1.9600 * sig_d)[::-1]]),
+        alpha=.25, color = 'dodgerblue', ec='None')
+
+
+#plt.fill(np.concatenate([xi, xi[::-1]]),
+#        np.concatenate([delta_rec-0.21 - 2.997 * sig_d,
+#                        (delta_rec-0.21 + 2.997 * sig_d)[::-1]]),
+#        alpha=.5, color = 'dodgerblue', ec='None')
+
+plt.legend(prop={'size':7.0})
+plt.ylim(0.25,1)
 plt.xlim(0,1)
 plt.xlabel('$z$')
 plt.ylabel('$\delta(z)$')
-#plt.savefig('delta(z)_comparacao_z=1_semOk.png', dpi=520, format='png', bbox_inches='tight')
+#plt.savefig('delta(z)_comparacao_newsombreada2.pdf', dpi=520, format='pdf', bbox_inches='tight')
 plt.show()
 
 
