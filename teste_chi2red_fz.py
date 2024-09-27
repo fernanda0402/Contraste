@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 23 14:03:28 2024
+
+@author: usuario
+"""
+
+# Bibliotecas:
+import numpy as np
+from scipy.interpolate import CubicSpline
+
+# número de dados de fs8
+N = 11
+
+
+# dados de f
+dados_fz = np.genfromtxt('/home/usuario/Documentos/Dados/fz_data.csv', delimiter=', ')
+
+z_dados = dados_fz[:, 0]
+fz = dados_fz[:, 1]
+
+fz = fz[z_dados<=1]
+z_dados = z_dados[z_dados<=1]
+
+
+# dados reconstruídos de fs8
+recon = np.genfromtxt('//home/usuario/Documentos/Códigos/Estudo do contraste/fz_recon_gapp.csv',delimiter=', ')
+
+x = recon[:, 0]
+y = recon[:, 1]
+e = recon[:, 2]
+
+fs8_recon = CubicSpline(x, y)
+
+e_recon = CubicSpline(x, e)
+
+V_r =  fs8_recon(z_dados)
+
+sig_V = e_recon(z_dados)
+
+
+
+
+
+model_1 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_lcdm_pontos_original.csv',delimiter=', ')
+
+x1 = model_1[:, 0]
+y1 = model_1[:, 1]
+
+p1 = 2
+
+# Obtendo os índices que ordenam x
+indices = np.argsort(x1)
+
+# Reordenando x e y com base nesses índices
+x_sorted = x1[indices]
+y_sorted = y1[indices]
+
+x1 = x_sorted
+y1 = y_sorted
+
+# plt.plot(x1, y1, color='red')
+
+
+f_y1 = CubicSpline(x1, y1)
+
+model_2 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_wcdm_pontos_original.csv',delimiter=',')
+
+x2 = model_2[:, 0]
+y2 = model_2[:, 1]
+
+p2 = 2
+
+indices_2 = np.argsort(x2)
+
+x2_sorted = x2[indices_2]
+y2_sorted = y2[indices_2]
+
+x2 = x2_sorted
+y2 = y2_sorted
+
+f_y2 = CubicSpline(x2, y2)
+
+model_3 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_AB_pontos_original.csv',delimiter=',')
+
+x3 = model_3[:, 0]
+y3 = model_3[:, 1]
+
+p3 = 3
+
+indices_3 = np.argsort(x3)
+
+x3_sorted = x3[indices_3]
+y3_sorted = y3[indices_3]
+
+x3 = x3_sorted
+y3 = y3_sorted
+
+f_y3 = CubicSpline(x3, y3)
+
+model_4 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_HS(n=1)_pontos_original.csv',delimiter=',')
+
+x4 = model_4[:, 0]
+y4 = model_4[:, 1]
+
+p4 = 4
+
+indices_4 = np.argsort(x4)
+
+x4_sorted = x4[indices_4]
+y4_sorted = y4[indices_4]
+
+x4 = x4_sorted
+y4 = y4_sorted
+
+f_y4 = CubicSpline(x4, y4)
+
+model_5 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_HS(n=2)_pontos_original.csv',delimiter=',')
+
+x5 = model_5[:, 0]
+y5 = model_5[:, 1]
+
+p5 = 4
+
+indices_5 = np.argsort(x5)
+
+x5_sorted = x5[indices_5]
+y5_sorted = y5[indices_5]
+
+x5 = x5_sorted
+y5 = y5_sorted
+
+f_y5 = CubicSpline(x5, y5)
+
+model_6 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_Okcdm_pontos_original.csv',delimiter=',')
+
+x6 = model_6[:, 0]
+y6 = model_6[:, 1]
+
+p6 = 2
+
+indices_6 = np.argsort(x6)
+
+x6_sorted = x6[indices_6]
+y6_sorted = y6[indices_6]
+
+x6 = x6_sorted
+y6 = y6_sorted
+
+f_y6 = CubicSpline(x6, y6)
+
+model_7 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_S(n=1)_pontos_original.csv',delimiter=',')
+
+x7 = model_7[:, 0]
+y7 = model_7[:, 1]
+
+p7 = 4
+
+indices_7 = np.argsort(x7)
+
+x7_sorted = x7[indices_7]
+y7_sorted = y7[indices_7]
+
+x7 = x7_sorted
+y7 = y7_sorted
+
+f_y7 = CubicSpline(x7, y7)
+
+model_8 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_S(n=2)_pontos_original.csv',delimiter=',')
+
+x8 = model_8[:, 0]
+y8 = model_8[:, 1]
+
+p8 = 4
+
+indices_8 = np.argsort(x8)
+
+x8_sorted = x8[indices_8]
+y8_sorted = y8[indices_8]
+
+x8 = x8_sorted
+y8 = y8_sorted
+
+f_y8 = CubicSpline(x8, y8)
+
+model_9 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_w0wacdm_pontos_original.csv',delimiter=',')
+
+x9 = model_9[:, 0]
+y9 = model_9[:, 1]
+
+p9 = 2
+
+indices_9 = np.argsort(x9)
+
+x9_sorted = x9[indices_9]
+y9_sorted = y9[indices_9]
+
+x9 = x9_sorted
+y9 = y9_sorted
+
+f_y9 = CubicSpline(x9, y9)
+
+model_10 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_F1(Q)_pontos_original.csv',delimiter=',')
+
+x10 = model_10[:, 0]
+y10 = model_10[:, 1]
+
+p10 = 3
+
+indices_10 = np.argsort(x10)
+
+x10_sorted = x10[indices_10]
+y10_sorted = y10[indices_10]
+
+x10 = x10_sorted
+y10 = y10_sorted
+
+f_y10 = CubicSpline(x10, y10)
+
+model_11 = np.genfromtxt('/home/usuario/Documentos/Códigos/Estudo do contraste/Teste chi2/f_F2(Q)_pontos_original.csv',delimiter=',')
+
+x11 = model_11[:, 0]
+y11 = model_11[:, 1]
+
+p11 = 3
+
+indices_11 = np.argsort(x11)
+
+x11_sorted = x11[indices_11]
+y11_sorted = y11[indices_11]
+
+x11 = x11_sorted
+y11 = y11_sorted
+
+f_y11 = CubicSpline(x11, y11)
+
+
+
+
+# teste chi2_red
+
+# modelo lcdm
+X2r_model_1 = (1 / (N - p1)) * (np.sum(((f_y1(z_dados) - V_r) / sig_V)**2))
+
+print('LCDM:',X2r_model_1)
+
+
+# modelo wcdm
+X2r_model_2 = (1 / (N - p2)) * np.sum(((f_y2(z_dados) - V_r) / sig_V)**2)
+
+print('wCDM:',X2r_model_2)
+
+
+# appleby-battye
+X2r_model_3 = (1 / (N - p3)) * np.sum(((f_y3(z_dados) - V_r) / sig_V)**2)
+
+print('AB:',X2r_model_3)
+
+
+# hu-sawicki n = 1
+X2r_model_4 = (1 / (N - p4)) * np.sum(((f_y4(z_dados) - V_r) / sig_V)**2)
+
+print('HS(n=1):',X2r_model_4)
+
+
+# hu-sawicki n = 2
+X2r_model_5 = (1 / (N - p5)) * np.sum(((f_y5(z_dados) - V_r) / sig_V)**2)
+
+print('HS(n=2):',X2r_model_5)
+
+
+# modelo okcdm
+X2r_model_6 = (1 / (N - p6)) * np.sum(((f_y6(z_dados) - V_r) / sig_V)**2)
+
+print('Ok-CDM:',X2r_model_6)
+
+
+# starobinski n = 1
+X2r_model_7 = (1 / (N - p7)) * np.sum(((f_y7(z_dados) - V_r) / sig_V)**2)
+
+print('Starobinski(n=1):',X2r_model_7)
+
+
+# starobinski n = 2
+X2r_model_8 = (1 / (N - p8)) * np.sum(((f_y8(z_dados) - V_r) / sig_V)**2)
+
+print('Starobinski(n=2):',X2r_model_8)
+
+
+# modelo w0wacdm
+X2r_model_9 = (1 / (N - p9)) * np.sum(((f_y9(z_dados) - V_r) / sig_V)**2)
+
+print('w0waCDM:',X2r_model_9)
+
+
+# F1(Q)
+X2r_model_10 = (1 / (N - p10)) * np.sum(((f_y10(z_dados) - V_r) / sig_V)**2)
+
+print('F1(Q):',X2r_model_10)
+
+
+# F2(Q)
+X2r_model_11 = (1 / (N - p11)) * np.sum(((f_y11(z_dados) - V_r) / sig_V)**2)
+
+print('F2(Q):',X2r_model_11)
+
