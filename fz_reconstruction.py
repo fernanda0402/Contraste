@@ -79,9 +79,12 @@ flcdm = ccl.background.growth_rate(cosmo, a)
 # Plot the function, the prediction and the 95% confidence interval 
 plt.figure()
 plt.tick_params(labelsize=14, color='purple')
-plt.errorbar(x_gapp, y_gapp, e, fmt='r.', color='red', markersize=10, label='Data')
-plt.plot(xi, y_pred, color = 'navy', label='Prediction', linestyle="dotted", linewidth = 2)
+
 plt.plot(zlcdm, flcdm, label='$\Lambda$CDM', color='blue', linestyle='--', linewidth = 3)
+plt.plot(xi, y_pred, color = 'navy', label='GP', linestyle="dotted", linewidth = 2)
+plt.errorbar(x_gapp, y_gapp, e, fmt='r.', color='red', markersize=10, label='Data')
+
+
 plt.fill(np.concatenate([xi, xi[::-1]]),
          np.concatenate([y_pred - 1.9600 * sigma,
                         (y_pred + 1.9600 * sigma)[::-1]]),

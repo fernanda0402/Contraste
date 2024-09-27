@@ -302,19 +302,22 @@ z = 1/sol_w1.t - 1
 
 ################################################################################
 
-# Modelo O_k-CDM:
-    
-t = np.linspace(0.17, 1, 1000)
+# Modelo Ok-CDM - arxiv 0903.0001
+
+t = np.linspace(ti, 1, 1000)
 z = (1/t) - 1
-    
+
 def growth(O_m0, O_K0):
-  O_m = O_m0*t**(-3)
-  O_K = O_K0*t**(-2)
-  O_L = 1 - O_m0
-  E2 = O_m + O_K + O_L
-  O_M = O_m0*t**(-3)/(E2)
-  f_K = O_M**(0.55)
+    
+  w = -1
+  
+  O_L = 1 - O_m0 - O_K0
+  O_K = O_K0*t / ( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  O_M = O_m0/( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  gamma = 0.55
+  f_K = O_M**(gamma) + (gamma - 4/7)*O_K
   return f_K
+
 
 def ln_delta(O_m0, O_K0):
   y = growth(O_m0, O_K0)/t
@@ -325,24 +328,6 @@ def delta(O_m0, O_K0):
   delta = np.exp(ln_delta(O_m0, O_K0))
   delta = delta/delta[999]
   return delta
-
-
-
-#a1 = np.linspace(0.17, 1, 1000)
-
-#z_LC = (1/a1) - 1
-
-#O_L1 = 1 - O_m0 - O_k0
-
-#H_LC = H0*np.sqrt(O_m0*(a1**(-3)) + O_L1 + O_k0*(a1**(-2)))
-
-#Om = O_m0*(a1**(-3)) / ( (H_LC/H0)**2 )
-
-#f_LC = Om**0.55
-
-#x_1 = cumtrapz(f_LC, x = np.log(a1), initial = 0.001)
-
-#delta = np.exp(x_1)
 
 
 
@@ -490,20 +475,101 @@ def solD_HS(H0, O_m0, c2, n):
 
 
 
+# Modelo f(Q) - 3
+def Densidade_Q3(t, y, H0, O_m0, m):
+    D_Q3 = y[0]
+    dD_Q3 = y[1]
+
+    O_m = O_m0*t**(-3)
+    O_L = 1 - O_m0 - O_r0
+
+    M = m*H0
+       
+    H_Q3 = H0*np.sqrt(O_m + O_L)
+    dH_Q3 = -(3/2)*H0*(H0/H_Q3)*(O_m/t) # derivada de H com relação ao fator de escala
+    
+    Q = 6*(H_Q3)**2
+    
+    dfQ_3 = 1 + M*(Q**(-1/2)) / 2
+    
+    f1 = 3*(H0**2)*O_m
+    f2 = 2*(t**2)*(H_Q3**2)*dfQ_3
+
+    ddD_Q3 = - ((3/t) + (dH_Q3/H_Q3))*dD_Q3 + (f1/f2)*D_Q3  # equação do contraste
+    return [dD_Q3, ddD_Q3]
+
+
+def solD_fQ3(H0, O_m0, m):
+    # Espaço de integração:
+    t_span = [ti, 1]
+    t = np.linspace(ti, 1, 1000)
+
+    # Condições iniciais:
+    y0 = [ti, 1]
+
+    # Solução:
+    sol_Q3 = solve_ivp(Densidade_Q3, t_span, y0, t_eval=t, method='LSODA', args=(H0, O_m0, m))
+    D_Q3 = sol_Q3.y[0]
+    return D_Q3
+
+
+
+
+# Modelo f(Q) - 2
+def Densidade_Q2(t, y, H0, O_m0, m):
+    D_Q2 = y[0]
+    dD_Q2 = y[1]
+
+    O_m = O_m0*t**(-3)
+
+    M = m*H0
+    M4 = M**4
+
+    H_Q2 = np.sqrt( (H0**2)*O_m / 2 + (1/6)*np.sqrt(9*H0**4*O_m**2 + M4) ) # eq de Friedmann minha
+    dH_Q2 = ( (M**4 - 36*H_Q2**4)*H_Q2 ) / (2*t*(M**4 + 12*H_Q2**4) ) # obtida com a 1 eq de Friedmann minha
+
+    Q = 6*(H_Q2**2)
+
+    dfQ_2 = 1 - (M**4/Q**2)  # primeira derivada da f(Q)
+
+    f1 = 3*(H0**2)*O_m
+    f2 = 2*(t**2)*(H_Q2**2)*dfQ_2
+
+    ddD_Q2 = - ((3/t) + dH_Q2/H_Q2)*dD_Q2 + ( (f1/f2)*D_Q2 )  # equação do contraste
+    return [dD_Q2, ddD_Q2]
+
+def solD_fQ2(H0, O_m0, m):
+    # Espaço de integração:
+    t_span = [ti, 1]
+    t = np.linspace(ti, 1, 1000)
+
+    # Condições iniciais:
+    y0 = [ti, 1]
+
+    # Solução:
+    sol_Q2 = solve_ivp(Densidade_Q2, t_span, y0, t_eval=t, method='LSODA', args=(H0, O_m0, m))
+    D_Q2 = sol_Q2.y[0]
+    return D_Q2
+
 
 # plotando o contraste x z
 
+plt.plot(z, D_RG, color='blue', linewidth = 3, label='$\Lambda$CDM', linestyle='--')
+plt.plot(z, D_RG_w1, color='red', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, D_RG_w, color='darkgoldenrod', linewidth = 2, label='$\omega_0 \omega_a$CDM')
+plt.plot(z, delta(0.3, -0.056)-0.21, color='green', label='$\Omega_k$-CDM-0.21')
+
+
 plt.plot(z, solD_S(70,0.3,1,1), color='orange', linewidth = 2, label='Starobinski (n=1)', linestyle = '-.')
-plt.plot(z, solD_S(70,0.3,1,2), color='deeppink', linewidth = 2, label='Starobinski (n=2)', linestyle = '-.')
+plt.plot(z, solD_S(70,0.3,1,2), color='deeppink', linewidth = 2.8, label='Starobinski (n=2)', linestyle = '-.')
 plt.plot(z, solD_HS(70,0.3,1,1), color='purple', linewidth = 2, label='Hu-Sawicki (n=1)')
 plt.plot(z, solD_HS(70,0.3,1,2), color='magenta', linewidth = 2, label='Hu-Sawicki (n=2)')
-plt.plot(z, D_RG_w1, color='red', linewidth = 2, label='$\omega$CDM')
-plt.plot(z, delta(0.3, -0.056)-0.21, color='green', label='$\Omega_k$-CDM-0.21')
-plt.plot(z, D_RG, color='blue', linewidth = 3, label='$\Lambda$CDM', linestyle='--')
-plt.plot(z, sol_DAB(70, 0.3, 1.6), color='black', linewidth = 2, label='$R^2$_AB model')
+plt.plot(z, sol_DAB(70, 0.3, 1.6), color='black', linewidth = 2, label='$R^2$_AB')
 
-plt.plot(xi, delta_rec-0.21, color='navy', linewidth = 2, label='Prediction-0.21', linestyle='dotted' )
+plt.plot(z, solD_fQ3(70, 0.3, 2.0331), color='maroon', label='$F_1(Q)$', linewidth = 2)
+plt.plot(z, solD_fQ2(70, 0.3, 2.0331), color='slategray', label='$F_2(Q)$', linewidth = 2)
+
+plt.plot(xi, delta_rec-0.21, color='navy', linewidth = 2, label='GP-0.21', linestyle='dotted' )
 
 
 plt.fill(np.concatenate([xi, xi[::-1]]),
@@ -522,12 +588,12 @@ plt.fill(np.concatenate([xi, xi[::-1]]),
 #                        (delta_rec-0.21 + 2.997 * sig_d)[::-1]]),
 #        alpha=.5, color = 'dodgerblue', ec='None')
 
-plt.legend(prop={'size':7.0})
+plt.legend(prop={'size':6.5})
 plt.ylim(0.25,1)
 plt.xlim(0,1)
-plt.xlabel('$z$')
-plt.ylabel('$\delta(z)$')
-#plt.savefig('delta(z)_comparacao_newsombreada2.pdf', dpi=520, format='pdf', bbox_inches='tight')
+plt.xlabel('$z$', fontsize=20)
+plt.ylabel('$\delta(z)$', fontsize=15)
+#plt.savefig('delta(z)_comparação.pdf', dpi=520, format='pdf', bbox_inches='tight')
 plt.show()
 
 

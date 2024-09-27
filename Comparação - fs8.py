@@ -524,78 +524,168 @@ def solfs8S(H0, O_m0, sig8, lbd, n):
 
 #######################################################################################
 
-# Modelo Ok-CDM:
-    
-# Modelo Ok-CDM:   
-        
+
+# Modelo Ok-CDM - arxiv 0903.0001
+
+t = np.linspace(p, 1, 1000)
+z = (1/t) - 1
+
 def growth(O_m0, O_K0):
-      O_m = O_m0*t**(-3)
-      O_K = O_K0*t**(-2)
-      O_L = 1 - O_m0
-      E2 = O_m + O_K + O_L
-      O_M = O_m0*t**(-3)/(E2)
-      f_K = O_M**(0.55)
-      return f_K
+    
+  w = -1
+  
+  O_L = 1 - O_m0 - O_K0
+  O_K = O_K0*t / ( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  O_M = O_m0/( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  gamma = 0.55
+  f_K = O_M**(gamma) + (gamma - 4/7)*O_K
+  return f_K
+
 
 def ln_delta(O_m0, O_K0):
-      y = growth(O_m0, O_K0)/t
-      ln_delta = cumtrapz(y, t, initial=0)
-      return ln_delta
+  y = growth(O_m0, O_K0)/t
+  ln_delta = cumtrapz(y, t, initial=0)
+  return ln_delta
 
 def delta(O_m0, O_K0):
-      delta = np.exp(ln_delta(O_m0, O_K0))
-      delta = delta/delta[999]
-      return delta
+  delta = np.exp(ln_delta(O_m0, O_K0))
+  delta = delta/delta[999]
+  return delta
 
 def fs8(O_m0, O_K0, sig80):
       fs8 = sig80*growth(O_m0, O_K0)*delta(O_m0, O_K0)
       return fs8
 
-#O_m0 = 0.315
-#H0 = 67.4
-#sig80 = 0.812
-
-#a_LC = np.linspace(0.17, 1, 1000)
-
-#z_LC = (1/a_LC) - 1
-
-#O_L1 = 1 - O_m0 - O_k0
-
-#H_LC = H0*np.sqrt(O_m0*(a_LC**(-3)) + O_L1 + O_k0*(a_LC**(-2)))
-
-#Om = O_m0*(a_LC**(-3)) / ( (H_LC/H0)**2 )
-
-#f_LC = Om**0.55
-
-# definindo E(z)
-#Ez = H_LC / H0
-
-# integral
-#k = (1. + z_LC) / (Ez ** 3)
-
-#Int = cumtrapz(k, x=z_LC, initial=0)
-
-# definindo D(z)
-#D_Ok = Ez*Int
-
-# definindo fs8
-#fs8_Ok = f_LC*sig80*D_Ok
-
 #######################################################################################
 
 
 
-plt.plot(z, solfs8AB(70, 0.3, 0.8, 2), color='black', linewidth = 1.5, label='Appleby-Battye')
-plt.plot(z, solfs8HS(70, 0.3, 0.8, 1, 1), color='purple', linewidth = 1.5, label='Hu-Sawicki ($n=1$)')
-plt.plot(z, solfs8HS(70, 0.3, 0.8, 1, 2), color='magenta', linewidth = 1.5, label='Hu-Sawicki ($n=2$)')
-plt.plot(z, solfs8S(70, 0.3, 0.8, 2, 1), color='orange', linewidth = 1.5, label='Starobinsky ($n=1$)', linestyle = '-.')
-plt.plot(z, solfs8S(70, 0.3, 0.8, 2, 2), color='deeppink', linewidth = 1.5, label='Starobinsky ($n=2$)', linestyle = '-.')
+
+# Modelo f(Q) - 3
+def Densidade_Q3(t, y, H0, O_m0, m):
+    D_Q3 = y[0]
+    dD_Q3 = y[1]
+
+    O_m = O_m0*t**(-3)
+    O_L = 1 - O_m0 - O_r0
+
+    M = m*H0
+       
+    H_Q3 = H0*np.sqrt(O_m + O_L)
+    dH_Q3 = -(3/2)*H0*(H0/H_Q3)*(O_m/t) # derivada de H com relação ao fator de escala
+    
+    Q = 6*(H_Q3)**2
+    
+    dfQ_3 = 1 + M*(Q**(-1/2)) / 2
+    
+    f1 = 3*(H0**2)*O_m
+    f2 = 2*(t**2)*(H_Q3**2)*dfQ_3
+
+    ddD_Q3 = - ((3/t) + (dH_Q3/H_Q3))*dD_Q3 + (f1/f2)*D_Q3  # equação do contraste
+    return [dD_Q3, ddD_Q3]
+
+
+def solD_fQ3(H0, O_m0, m):
+    # Espaço de integração:
+    t_span = [p, 1]
+    t = np.linspace(p, 1, 1000)
+
+    # Condições iniciais:
+    y0 = [p, 1]
+
+    # Solução:
+    sol_Q3 = solve_ivp(Densidade_Q3, t_span, y0, t_eval=t, method='LSODA', args=(H0, O_m0, m))
+    D_Q3 = sol_Q3.y[0]
+    return D_Q3
+
+
+def solfs8_fQ3(H0, O_m0, sig8, m):
+    y0 = [p, 1]
+    t_span = [p, 1]
+    sol = solve_ivp(Densidade_Q3, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, m))
+    D = sol.y[0]
+    dD = sol.y[1]
+    fs8 = sig8*sol.t*(dD/solD_fQ3(H0, O_m0, m)[999])
+    return fs8
+
+
+
+# Modelo f(Q) - 2
+def Densidade_Q2(t, y, H0, O_m0, m):
+    D_Q2 = y[0]
+    dD_Q2 = y[1]
+
+    O_m = O_m0*t**(-3)
+
+    M = m*H0
+    M4 = M**4
+
+    H_Q2 = np.sqrt( (H0**2)*O_m / 2 + (1/6)*np.sqrt(9*H0**4*O_m**2 + M4) ) # eq de Friedmann minha
+    dH_Q2 = ( (M**4 - 36*H_Q2**4)*H_Q2 ) / (2*t*(M**4 + 12*H_Q2**4) ) # obtida com a 1 eq de Friedmann minha
+
+    Q = 6*(H_Q2**2)
+
+    dfQ_2 = 1 - (M**4/Q**2)  # primeira derivada da f(Q)
+
+    f1 = 3*(H0**2)*O_m
+    f2 = 2*(t**2)*(H_Q2**2)*dfQ_2
+
+    ddD_Q2 = - ((3/t) + dH_Q2/H_Q2)*dD_Q2 + ( (f1/f2)*D_Q2 )  # equação do contraste
+    return [dD_Q2, ddD_Q2]
+
+def solD_fQ2(H0, O_m0, m):
+    # Espaço de integração:
+    t_span = [p, 1]
+    t = np.linspace(p, 1, 1000)
+
+    # Condições iniciais:
+    y0 = [p, 1]
+
+    # Solução:
+    sol_Q2 = solve_ivp(Densidade_Q2, t_span, y0, t_eval=t, method='LSODA', args=(H0, O_m0, m))
+    D_Q2 = sol_Q2.y[0]
+    return D_Q2
+
+
+# Solução para f(z)
+def solf_fQ2(H0, O_m0, m):
+    t_span = [p, 1]
+    y0 = [p, 1]
+    sol = solve_ivp(Densidade_Q2, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, m))
+    D_Q2 = sol.y[0]
+    dD_Q2 = sol.y[1]
+    f_Q2 = sol.t*(dD_Q2/D_Q2)
+    return f_Q2
+
+
+def solfs8_fQ2(H0, O_m0, sig8, m):
+    y0 = [p, 1]
+    t_span = [p, 1]
+    sol = solve_ivp(Densidade_Q2, t_span, y0, t_eval=t, method='LSODA', rtol = 10**(-6), args=(H0, O_m0, m))
+    D = sol.y[0]
+    dD = sol.y[1]
+    fs8 = sig8*sol.t*(dD/solD_fQ2(H0, O_m0, m)[999])
+    return fs8
+
+
+
 plt.plot(z, solfs8L(70, 0.3, 0.8), color='blue', linewidth = 2.5, label='$\Lambda$CDM', linestyle = '--')
 plt.plot(z, solfs8L_w1(70, 0.3, 0.8), color='red', linewidth = 2, label='$\omega$CDM')
 plt.plot(z, solfs8L_w(70, 0.3, 0.8), color='darkgoldenrod', linewidth = 2, label='$\omega_0 \omega_a$CDM')
-plt.plot(z, fs8(0.3, -0.056, 0.811), color='green', label='$\Omega_k$-CDM')
+plt.plot(z, fs8(0.3, -0.056, 0.811), color='green', label='$\Omega_k$-CDM', linewidth = 2)
 
-plt.plot(xi, y_pred, color = 'navy', label='Prediction', linestyle="dotted")
+
+plt.plot(z, solfs8S(70, 0.3, 0.8, 2, 1), color='orange', linewidth = 2, label='Starobinsky ($n=1$)', linestyle = '-.')
+plt.plot(z, solfs8S(70, 0.3, 0.8, 2, 2), color='deeppink', linewidth = 2.8, label='Starobinsky ($n=2$)', linestyle = '-.')
+plt.plot(z, solfs8HS(70, 0.3, 0.8, 1, 1), color='purple', linewidth = 2, label='Hu-Sawicki ($n=1$)')
+plt.plot(z, solfs8HS(70, 0.3, 0.8, 1, 2), color='magenta', linewidth = 2, label='Hu-Sawicki ($n=2$)')
+plt.plot(z, solfs8AB(70, 0.3, 0.8, 2), color='black', linewidth = 2, label='$R^2$_AB')
+
+
+plt.plot(z, solfs8_fQ3(70, 0.3, 0.8, 2.0331), color='maroon', label='$F_1(Q)$', linewidth = 2)
+plt.plot(z, solfs8_fQ2(70, 0.3, 0.8, 2.0331), color='slategray', label='$F_2(Q)$', linewidth = 2)
+
+plt.plot(xi, y_pred, color = 'navy', label='GP', linestyle="dotted")
 
 plt.fill(np.concatenate([xi, xi[::-1]]),
          np.concatenate([y_pred - 1.9600 * sigma,
@@ -606,9 +696,9 @@ plt.fill(np.concatenate([xi, xi[::-1]]),
                         (y_pred + 1.00 * sigma)[::-1]]),
          alpha=.5, color = 'dodgerblue', ec='None')
 
-plt.legend(prop={'size':6.5}, loc='lower right')
-plt.xlabel('$z$')
-plt.ylabel('$[f\sigma_8](z)$')
+plt.legend(prop={'size':5.5}, loc='lower right')
+plt.xlabel('$z$', fontsize=20)
+plt.ylabel('$[f\sigma_8](z)$', fontsize=15)
 plt.xlim(0, 1)
 plt.ylim(0.3, 0.53)
 #plt.savefig('fs8_comparação.pdf', dpi=520, format='pdf', bbox_inches='tight')

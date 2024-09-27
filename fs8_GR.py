@@ -16,8 +16,6 @@ from scipy.integrate import cumtrapz
 
 O_r0 = 0
 O_L0 = 0.7
-mu = 10**(-11)
-k = 0.125
 w0 = -0.957
 wa = -0.29
 O_k0 = -0.056
@@ -175,16 +173,22 @@ def solfs8L_w(H0, O_m0, sig8):
 
 #####################################################################################
 
-# Modelo Ok-CDM:   
-    
+# Modelo Ok-CDM - arxiv 0903.0001
+
+t = np.linspace(p, 1, 1000)
+z = (1/t) - 1
+
 def growth(O_m0, O_K0):
-  O_m = O_m0*t**(-3)
-  O_K = O_K0*t**(-2)
-  O_L = 1 - O_m0
-  E2 = O_m + O_K + O_L
-  O_M = O_m0*t**(-3)/(E2)
-  f_K = O_M**(0.55)
+    
+  w = -1
+  
+  O_L = 1 - O_m0 - O_K0
+  O_K = O_K0*t / ( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  O_M = O_m0/( O_m0 + O_K0*t + O_L*(t**(-3*w)) )
+  gamma = 0.55
+  f_K = O_M**(gamma) + (gamma - 4/7)*O_K
   return f_K
+
 
 def ln_delta(O_m0, O_K0):
   y = growth(O_m0, O_K0)/t
@@ -197,39 +201,9 @@ def delta(O_m0, O_K0):
   return delta
 
 def fs8(O_m0, O_K0, sig80):
-  fs8 = sig80*growth(O_m0, O_K0)*delta(O_m0, O_K0)
-  return fs8
+      fs8 = sig80*growth(O_m0, O_K0)*delta(O_m0, O_K0)
+      return fs8
 
-
-#O_m0 = 0.315
-#H0 = 67.4
-#sig80 = 0.812
-    
-#a = np.linspace(0.17, 1, 1000) 
-
-#z_LC = (1/a) - 1
-
-#O_L1 = 1 - O_m0 - O_k0
-     
-#H_LC = H0*np.sqrt(O_m0*(a**(-3)) + O_L1 + O_k0*(a**(-2)))
-
-#Om = O_m0*(a**(-3)) / ( (H_LC/H0)**2 )
-
-#f_LC = Om**0.55
-
-# definindo E(z)
-#Ez = H_LC / H0
-
-# integral 
-#k = (1. + z_LC) / (Ez ** 3)
-
-#Int = cumtrapz(k, x=z_LC, initial=0)
-
-# definindo D(z)
-#D_Ok = Ez*Int
-
-# definindo fs8
-#fs8_Ok = f_LC*sig80*D_Ok
 
 
 #######################################################################################

@@ -132,7 +132,7 @@ plt.figure()
 plt.tick_params(labelsize=14, color='purple')
 plt.plot(z, solfs8L(70, 0.3, 0.8), color='blue', linewidth = 2.5, label='$\Lambda$CDM', linestyle = '--')
 plt.errorbar(x_gapp, y_gapp, e, fmt='o', markersize=5, color='red', label='Data')
-plt.plot(xi, y_pred, color = 'navy', label='Prediction', linestyle="dotted")
+plt.plot(xi, y_pred, color = 'navy', label='GP', linestyle="dotted")
 plt.fill(np.concatenate([xi, xi[::-1]]),
          np.concatenate([y_pred - 1.9600 * sigma,
                         (y_pred + 1.9600 * sigma)[::-1]]),
