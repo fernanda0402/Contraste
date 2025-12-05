@@ -1,2 +1,2 @@
 # Contraste
-Estudo da degenerescência do índice de crescimento. Os códigos restantes serão colocados quando o artigo for finalizado e for enviado para submissão.
+Estudo da viabilidade de modelos alternativos ao $\Lambda$CDM com dados de fs8, CC e SNIa.
